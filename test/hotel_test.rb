@@ -29,6 +29,13 @@ describe Suitcase::Hotel do
     it "returns a Hotel::Result" do
       @result.must_be_kind_of Suitcase::Hotel::Result
     end
+
+    describe "room availability" do
+      it "returns a reservation" do
+        room = @result.value.first.rooms.first
+        room.reserve(RESERVATION_HASH)
+      end
+    end
   end
   
   describe "error handling" do

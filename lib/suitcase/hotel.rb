@@ -57,6 +57,7 @@ module Suitcase
       #                                             the room. (default: [])
       #           :include_details    - Boolean. Include extra information with
       #                                 each room option.
+      #           :location           - A string location to search by.
       # Examples:
       #
       #   Hotel.find(location: "Boston")
@@ -96,7 +97,7 @@ module Suitcase
       #
       # Returns a Result with search results.
       def availability_search(params)
-        req_params = room_group({
+        req_params = Room.room_group({
           arrivalDate: params[:arrival],
           departureDate: params[:departure],
           numberOfResults: params[:number_of_results],
@@ -118,23 +119,6 @@ module Suitcase
         hotel_list(destinationString: params[:location])
       end
       
-      # Internal: Format the room group expected by the EAN API.
-      #
-      # req_params  - The request parameters already set.
-      # rooms       - Array of Hashes:
-      #               :adults - Integer number of adults in the room.
-      #               :children - Array of children ages in the room (default: []).
-      #
-      # Returns a Hash of request parameters.
-      def room_group(req_params, rooms)
-        rooms.each_with_index do |room, index|
-          room_n = index + 1
-          req_params["room#{room_n}"] = [room[:adults], room[:children]].
-                                        flatten.join(",")
-        end
-
-        req_params
-      end
 
       # Internal: Complete the request for a Hotel list.
       #
@@ -274,7 +258,9 @@ module Suitcase
                   :amenities, :tripadvisor_rating, :location_description,
                   :short_description, :high_rate, :low_rate, :currency,
                   :latitude, :longitude, :proximity_distance, :proximity_unit,
-                  :in_destination, :thumbnail_path, :ian_url, :rooms
+                  :in_destination, :thumbnail_path, :ian_url
+
+    attr_writer :rooms
 
     # Internal: Create a new Hotel.
     #
@@ -282,6 +268,22 @@ module Suitcase
     #         on.
     def initialize
       yield self
+    end
+
+    # Public: Access returned rooms or search for rooms.
+    #
+    # rooms - An optional Array of Hashes, to be used only if searching for
+    #         rooms. Each Hash has the following keys:
+    #         :adults   - The number of adults in that room.
+    #         :children - An Array of the ages of children in that room.
+    #
+    # Returns a Room.
+    def rooms(rooms = {})
+      if @rooms
+        @rooms
+      else
+        room_search(rooms)
+      end
     end
 
     # Internal: A small wrapper around the results of an EAN API call.
@@ -355,6 +357,31 @@ module Suitcase
         @restricted = room_details["propertyRestricted"]
         @expedia_id = room_details["expediaPropertyId"]
       end
+
+      # Internal: Format the room group expected by the EAN API.
+      #
+      # req_params  - The request parameters already set.
+      # rooms       - Array of Hashes:
+      #               :adults - Integer number of adults in the room.
+      #               :children - Array of children ages in the room (default: []).
+      #
+      # Returns a Hash of request parameters.
+      def self.room_group(req_params, rooms)
+        rooms.each_with_index do |room, index|
+          room_n = index + 1
+          req_params["room#{room_n}"] = [room[:adults], room[:children]].
+                                        flatten.join(",")
+        end
+
+        req_params
+      end
+
+      # Public: Reserve previously returned rooms.
+      #
+      # params  - A Hash of parameters to be passed to the API, with the
+      #           following required keys:
+      #           :
     end
   end
 end
+
