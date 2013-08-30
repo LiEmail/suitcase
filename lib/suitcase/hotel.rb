@@ -147,20 +147,10 @@ module Suitcase
         req_params[:minorRev] = Suitcase::Configuration.ean_hotel_minor_rev
         req_params = req_params.delete_if { |k, v| v == nil }
 
-        req = Patron::Session.new
-        params_string = req_params.inject("") do |initial, (key, value)|
-          value = (value == true ? "true" : value)
-          initial + if value
-                      req.urlencode(key.to_s) + "=" + req.urlencode(value) + "&"
-                    else
-                      ""
-                    end
+        # Result.new(res.url, req_params, res.body, parse_hotel_list(res.body))
+        Result.new("/ean-services/rs/hotel/v3/list", req_params) do |res|
+          [res.url, res.body, parse_hotel_list(res.body)]
         end
-        req.timeout = 30
-        req.base_url = "http://api.ean.com"
-        res = req.get("/ean-services/rs/hotel/v3/list?#{params_string}")
-
-        Result.new(res.url, req_params, res.body, parse_hotel_list(res.body))
       end
 
       # Internal: Parse the results of a Hotel list call.
@@ -278,7 +268,7 @@ module Suitcase
     #         :children - An Array of the ages of children in that room.
     #
     # Returns a Room.
-    def rooms(rooms = {})
+    def rooms(rooms = [])
       if @rooms
         @rooms
       else
@@ -292,12 +282,27 @@ module Suitcase
 
       # Internal: Create a new Result.
       #
-      # url     - String URL of the request.
-      # params  - Hash of the params used in the request.
-      # raw     - String, raw results of the request.
-      # value   - Whatever parsed information is to be returned.
-      def initialize(url, params, raw, value)
-        @url, @params, @raw, @value = url, params, raw, value
+      # path        - String path of the request to be used with the API base
+      #               URL.
+      # req_params  - Hash of the params used in the request.
+      # parser      - A block that should take the HTTP response and return the
+      #               request URL, the string response, and the Result value.
+      def initialize(path, req_params, &parser)
+        req = Patron::Session.new
+        params_string = req_params.inject("") do |initial, (key, value)|
+          value = (value == true ? "true" : value)
+          initial + if value
+                      req.urlencode(key.to_s) + "=" + req.urlencode(value) + "&"
+                    else
+                      ""
+                    end
+        end
+        req.timeout = 30
+        req.base_url = "http://api.ean.com"
+
+        res = req.get([path, params_string].join("?"))
+        
+        @url, @raw, @value = parser.call(res)
       end
     end
     
@@ -362,8 +367,9 @@ module Suitcase
       #
       # req_params  - The request parameters already set.
       # rooms       - Array of Hashes:
-      #               :adults - Integer number of adults in the room.
-      #               :children - Array of children ages in the room (default: []).
+      #               :adults   - Integer number of adults in the room.
+      #               :children - Array of children ages in the room
+      #                           (default: []).
       #
       # Returns a Hash of request parameters.
       def self.room_group(req_params, rooms)
@@ -380,7 +386,71 @@ module Suitcase
       #
       # params  - A Hash of parameters to be passed to the API, with the
       #           following required keys:
-      #           :
+      #           :first_name - The first name of the credit-card holder.
+      #           :last_name  - The last name of the credit-card holder.
+      #           :email      - The email address of the customer.
+      #           :home_phone - The home phone of the customer.
+      #           :work_phone - The work phone of the customer.
+      #           :extension  - The work phone extension of the customer. 5-char
+      #                         max.
+      #           :fax_phone  - The fax number of the customer.
+      #           :company    - The name of the company.
+      #           :emails     - Additional emails to send the reservation
+      #                         confirmation to.
+      #           :card       - A Hash of information about the customer's
+      #                         credit card with the following keys:
+      #                         :type       - The credit card type.
+      #                         :number     - The card's number
+      #                         :csv        - The CSV of the card.
+      #                         :expiration - The expiration of the card, as
+      #                                       MM/YYYY.
+      #           :address    - An Array of billing address lines. Maximum
+      #                         length of 3.
+      #           :city       - Billing address city.
+      #           :state      - The state/province code, if applicable.
+      #           :country    - The 2-char ISO-3166 country code in the billing
+      #                         address.
+      #           :postal_code- The postal code in the billing address.
+      #           :rooms      - The array of room objects passed to either
+      #                         Hotel.find or Hotel#rooms, with additional
+      #                         fields:
+      #                         :bed_type           - The ID of the desired bed
+      #                                               type. Choices are listed
+      #                                               in the room response.
+      #                         :smoking_preference - The smoking preference for
+      #                                               the room. Choices are
+      #                                               listed in the room
+      #                                               response.
+      #                         :first_name         - The first name of the
+      #                                               adult who will be checking
+      #                                               in to the room.
+      #                         :last_name          - The last name of the adult
+      #                                               who will be checking in to
+      #                                               the room.
+      #                         :number_of_beds     - The number of beds for the
+      #                                               room, to be based off the
+      #                                               room response.
+      #                         :frequent_guest_id  - A frequent guest number,
+      #                                               to be used only with Hotel
+      #                                               collect properties.
+      #                         :itinerary_id       - To be used in the event of
+      #                                               a credit card validation
+      #                                               error, in order to prevent
+      #                                               duplicate itineraries.
+      #                         :special_info       - Any custom info added by
+      #                                               the customer. 256-char
+      #                                               max.
+      #                         :affiliate_confirmation_id  - A unique generated
+      #                                                       value to be used
+      #                                                       for tracking the
+      #                                                       itinerary. 36-char
+      #                                                       max.
+      #                         :affiliate_customer_id  - A unique generated
+      #                                                   value to be used to
+      #                                                   track individual
+      #                                                   customers internally.
+      def reserve(params)
+      end
     end
   end
 end
