@@ -10,6 +10,7 @@ Gem::Specification.new do |s|
   s.homepage    = "http://github.com/walternelson/suitcase"
   s.summary     = %q{Ruby gem for interacting with the EAN Hotel API.}
   s.description = %q{Suitcase is a complete library for interacting with the EAN (Expedia.com) Hotel API.}
+  s.license     = "MIT"
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
