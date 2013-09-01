@@ -57,7 +57,7 @@ module Suitcase
       #                                             the room. (default: [])
       #           :include_details    - Boolean. Include extra information with
       #                                 each room option.
-      #           :location           - A string location to search by.
+      #           :location           - A String or Hash location to search by.
       # Examples:
       #
       #   Hotel.find(location: "Boston")
@@ -103,8 +103,9 @@ module Suitcase
           numberOfResults: params[:number_of_results],
           includeDetails: params[:include_details],
           includeHotelFeeBreakdown: params[:fee_breakdown],
-          destinationString: params[:location]
         }, params[:rooms])
+        req_params[:hotelIds] = params[:ids].join(",") if params[:ids]
+        req_params = location_params(req_params, params[:location])
 
         hotel_list(req_params)
       end
@@ -116,7 +117,11 @@ module Suitcase
       #
       # Returns a Result with search results.
       def dateless_search(params)
-        hotel_list(destinationString: params[:location])
+        if params[:location]
+          hotel_list(destinationString: params[:location])
+        elsif params[:ids]
+          hotel_list(hotelIds: params[:ids])
+        end
       end
       
 
@@ -151,6 +156,43 @@ module Suitcase
         Result.new("/ean-services/rs/hotel/v3/list", req_params) do |res|
           [res.url, res.body, parse_hotel_list(res.body)]
         end
+      end
+
+      # Internal: Parse the location search options for the API call.
+      #
+      # params    - Hash of existing request parameters.
+      # location  - Hash or String of location information.
+      #
+      # Returns an updated set of parameters to be passed to the API call as a
+      # Hash.
+      def location_params(params, location)
+        req_params = params.clone
+        if location === String
+          req_params[:destinationString] = location
+        elsif location === Hash
+          if location.keys.include?(:city)
+            req_params[:city] = location[:city]
+            if location[:state]
+              req_params[:stateProvinceCode] = location[:state]
+            end
+            req_params[:countryCode] = location[:country]
+
+          elsif location.keys.include?(:id)
+            req_params[:destinationId] = location[:id]
+
+          elsif location.keys.include?(:latitude)
+            req_params[:latitude] = location[:latitude]
+            req_params[:longitude] = location[:longitude]
+            if location[:radius] =~ /(\d+)\s(\w\w)/
+              req_params[:searchRadius] = $1
+              req_params[:searchRadiusUnit] = $2.capitalize
+            elsif location[:radius]
+              req_params[:searchRadius] = location[:radius]
+            end
+          end
+        end
+
+        req_params
       end
 
       # Internal: Parse the results of a Hotel list call.
