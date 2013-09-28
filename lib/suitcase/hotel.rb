@@ -118,9 +118,10 @@ module Suitcase
       # Returns a Result with search results.
       def dateless_search(params)
         if params[:location]
-          hotel_list(destinationString: params[:location])
+          req_params = location_params({}, params[:location])
+          hotel_list(req_params)
         elsif params[:ids]
-          hotel_list(hotelIds: params[:ids])
+          hotel_list(hotelIdList: params[:ids].join(","))
         end
       end
       
@@ -152,7 +153,6 @@ module Suitcase
         req_params[:minorRev] = Suitcase::Configuration.ean_hotel_minor_rev
         req_params = req_params.delete_if { |k, v| v == nil }
 
-        # Result.new(res.url, req_params, res.body, parse_hotel_list(res.body))
         Result.new("/ean-services/rs/hotel/v3/list", req_params) do |res|
           [res.url, res.body, parse_hotel_list(res.body)]
         end
@@ -167,9 +167,9 @@ module Suitcase
       # Hash.
       def location_params(params, location)
         req_params = params.clone
-        if location === String
+        if location.is_a?(String)
           req_params[:destinationString] = location
-        elsif location === Hash
+        elsif location.is_a?(Hash)
           if location.keys.include?(:city)
             req_params[:city] = location[:city]
             if location[:state]
@@ -179,16 +179,6 @@ module Suitcase
 
           elsif location.keys.include?(:id)
             req_params[:destinationId] = location[:id]
-
-          elsif location.keys.include?(:latitude)
-            req_params[:latitude] = location[:latitude]
-            req_params[:longitude] = location[:longitude]
-            if location[:radius] =~ /(\d+)\s(\w\w)/
-              req_params[:searchRadius] = $1
-              req_params[:searchRadiusUnit] = $2.capitalize
-            elsif location[:radius]
-              req_params[:searchRadius] = location[:radius]
-            end
           end
         end
 

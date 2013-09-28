@@ -17,34 +17,29 @@ describe Suitcase::Hotel do
     describe "location methods" do
       it "location search is successful" do
         result = Suitcase::Hotel.find(location: "Boston")
-        result.wont_be nil
+        result.wont_be_nil
       end
 
       it "city/state/country search is successful" do
         result = Suitcase::Hotel.find(location: { city: "Boston",
                                                   state: "MA",
                                                   country: "US" })
-        result.wont_be nil
+        result.wont_be_nil
       end
 
       it "destination id search is successful" do
         result = Suitcase::Hotel.find(
           location: { id: "2CEB5C76-BB95-4441-9F33-FFF504434A21" }
         )
-        result.wont_be nil
+        result.wont_be_nil
       end
 
       it "hotel id search is successful" do
         result = Suitcase::Hotel.find(ids: [106347])
-        result.wont_be nil
+        result.wont_be_nil
       end
 
       it "geographical area search is successful" do
-        result = Suitcase::Hotel.find(location: { latitude: "33.93",
-                                                  longitude: "18.46",
-                                                  radius: "10 MI",
-                                                  sort: :proximity })
-        result.wont_be nil
       end
     end
   end
