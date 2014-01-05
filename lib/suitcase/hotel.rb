@@ -81,8 +81,10 @@ module Suitcase
       #
       # params - A Hash of search query parameters, unchanged from the find
       #           method:
-      #           :arrival            - String date of arrival, written MM/DD/YYYY.
-      #           :departure          - String date of departure, written MM/DD/YYYY.
+      #           :arrival            - String date of arrival, written
+      #                                 MM/DD/YYYY.
+      #           :departure          - String date of departure, written
+      #                                 MM/DD/YYYY.
       #           :number_of_results  - Integer number of results to return.
       #           :rooms              - An Array of Hashes, within each Hash:
       #                                 :adults   - Integer number of adults in
@@ -104,8 +106,11 @@ module Suitcase
           includeDetails: params[:include_details],
           includeHotelFeeBreakdown: params[:fee_breakdown],
         }, params[:rooms])
-        req_params[:hotelIds] = params[:ids].join(",") if params[:ids]
-        req_params = location_params(req_params, params[:location])
+        if params[:ids]
+          req_params[:hotelIds] = params[:ids].join(",")
+        elsif params[:location]
+          req_params = location_params(req_params, params[:location])
+        end
 
         hotel_list(req_params)
       end
@@ -124,7 +129,6 @@ module Suitcase
           hotel_list(hotelIdList: params[:ids].join(","))
         end
       end
-      
 
       # Internal: Complete the request for a Hotel list.
       #
@@ -176,9 +180,14 @@ module Suitcase
               req_params[:stateProvinceCode] = location[:state]
             end
             req_params[:countryCode] = location[:country]
-
           elsif location.keys.include?(:id)
             req_params[:destinationId] = location[:id]
+          elsif location.keys.include?(:latitude)
+            req_params[:latitude] = location[:latitude]
+            req_params[:longitude] = location[:longitude]
+            req_params[:searchRadius] = location[:radius]
+            req_params[:searchRadiusUnit] = location[:radius_unit]
+            req_params[:sort] = location[:sort].to_s
           end
         end
 
@@ -369,7 +378,7 @@ module Suitcase
     # Internal: Representation of room availability as returned by the API.
     class Room
       Promotion = Struct.new(:id, :description, :details)
-      
+
       attr_accessor :room_type_code, :rate_code, :rate_key, :max_occupancy,
                     :quoted_occupancy, :minimum_age, :description, :promotion,
                     :allotment, :available, :restricted, :expedia_id

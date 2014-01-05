@@ -40,6 +40,13 @@ describe Suitcase::Hotel do
       end
 
       it "geographical area search is successful" do
+        result = Suitcase::Hotel.find(location: {
+          latitude: "-026.13333",
+          longitude: "027.90000",
+          radius: "20",
+          radius_unit: "MI" # default is 20 miles
+        })
+        result.wont_be_nil
       end
     end
   end

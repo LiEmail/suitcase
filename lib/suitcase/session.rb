@@ -8,9 +8,9 @@ module Suitcase
     # Public: Create a new Session.
     #
     # info - Hash of user information:
-    #         :ean_id - String. Session ID provided to the user on the first
-    #                   request on their behalf.
-    #         :ip     - The IP address of the user (default: nil).
+    #         :ean_id     - String. Session ID provided to the user on the first
+    #                       request on their behalf.
+    #         :ip         - The IP address of the user (default: nil).
     #         :user_agent - String. The user agent of the user.
     def initialize(info = {})
       @ean_id, @ip, @user_agent = info[:ean_id], info[:ip], info[:user_agent]
