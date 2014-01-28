@@ -105,6 +105,7 @@ module Suitcase
           numberOfResults: params[:number_of_results],
           includeDetails: params[:include_details],
           includeHotelFeeBreakdown: params[:fee_breakdown],
+          includeSurrounding: params[:include_surrounding]
         }, params[:rooms])
         if params[:ids]
           req_params[:hotelIds] = params[:ids].join(",")
@@ -123,7 +124,9 @@ module Suitcase
       # Returns a Result with search results.
       def dateless_search(params)
         if params[:location]
-          req_params = location_params({}, params[:location])
+          req_params = location_params({
+            includeSurrounding: params[:include_surrounding]
+          }, params[:location])
           hotel_list(req_params)
         elsif params[:ids]
           hotel_list(hotelIdList: params[:ids].join(","))
@@ -180,6 +183,13 @@ module Suitcase
               req_params[:stateProvinceCode] = location[:state]
             end
             req_params[:countryCode] = location[:country]
+            if location[:address]
+              req_params[:address] = location[:address]
+              if location[:postal_code]
+                req_params[:postalCode] = location[:postal_code]
+              end
+            end
+            req_params[:propertyName] = location[:name] if location[:name]
           elsif location.keys.include?(:id)
             req_params[:destinationId] = location[:id]
           elsif location.keys.include?(:latitude)
@@ -356,12 +366,11 @@ module Suitcase
       # Public: The verbose message returned by the API.
       attr_accessor :verbose_message
       
-      # Public: The ID of the reservation made in the errant
-      #         request if a reservation completed.
+      # Public: The ID of the reservation made in the errant request if a
+      #         reservation completed.
       attr_accessor :reservation_id
 
-      # Public: The recoverability of the error (direct from the)
-      #         API.
+      # Public: The recoverability of the error (direct from the) API.
       attr_accessor :recoverability
       
       # Internal: Writer for the boolean whether a reservation was made.

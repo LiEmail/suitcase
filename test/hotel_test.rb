@@ -48,6 +48,27 @@ describe Suitcase::Hotel do
         })
         result.wont_be_nil
       end
+
+      it "address search is successful" do
+        result = Suitcase::Hotel.find(location: {
+          address: "200 Boylston St",
+          city: "Boston",
+          state: "MA",
+          country: "US",
+          postal_code: "02116"
+        })
+        result.wont_be_nil
+      end
+
+      it "search by name is successful" do
+        result = Suitcase::Hotel.find(location: {
+          city: "Boston",
+          state: "MA",
+          country: "US",
+          name: "Four Seasons"
+        })
+        result.wont_be_nil
+      end
     end
   end
 
@@ -71,6 +92,13 @@ describe Suitcase::Hotel do
         room = @result.value.first.rooms.first
         room.reserve(RESERVATION_HASH)
       end
+    end
+  end
+
+  describe "filtering methods" do
+    it "includeSurrounding works properly" do
+      result = Suitcase::Hotel.find(location: "Boston", include_surrounding: false)
+      result.wont_be_nil
     end
   end
   
